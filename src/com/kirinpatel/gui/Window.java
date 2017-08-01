@@ -38,5 +38,16 @@ public class Window extends JFrame {
         add(Visualizer.setInstance());
 
         setVisible(true);
+
+        new Thread(() -> {
+            while (Window.getInstance().isVisible()) {
+                try {
+                    Thread.sleep(1000 / 60);
+                    Visualizer.getInstance().repaint();
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                }
+            }
+        }).start();
     }
 }

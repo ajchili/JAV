@@ -1,5 +1,6 @@
 package com.kirinpatel.audio;
 
+import com.kirinpatel.gui.Visualizer;
 import com.kirinpatel.gui.Window;
 import com.sun.istack.internal.Nullable;
 
@@ -10,11 +11,11 @@ public class AudioGrabber {
 
     private static Mixer.Info mixer;
     private final static AudioFormat FORMAT = new AudioFormat(
-            96000,
+            41000,
             16,
             2,
             true,
-            true);
+            false);
     private static DataLine.Info info = new DataLine.Info(TargetDataLine.class, FORMAT);
     private static TargetDataLine line;
     private static AudioGrabber INSTANCE;
@@ -38,7 +39,7 @@ public class AudioGrabber {
 
     private AudioGrabber() {
         for (Mixer.Info mixer : AudioSystem.getMixerInfo()) {
-            if (mixer.getName().equals("Primary Sound Driver")) {
+            if (mixer.getName().contains("Port CABLE Output")) {
                 AudioGrabber.mixer = mixer;
                 break;
             }
@@ -46,14 +47,14 @@ public class AudioGrabber {
 
         if (AudioGrabber.mixer == null) {
             Window.getInstance().dispose();
-            throw new IllegalStateException("Unable to get Primary Sound Driver!");
+            throw new IllegalStateException("Unable to get CABLE Output!");
         }
 
         try {
-            line = (TargetDataLine) AudioSystem.getLine(info);
+            line = AudioSystem.getTargetDataLine(FORMAT);
             line.open();
         } catch (LineUnavailableException e) {
-            e.printStackTrace();
+            throw new IllegalStateException("Unable to read from CABLE Output!");
         }
 
         new Thread(() -> {
@@ -63,8 +64,8 @@ public class AudioGrabber {
             line.start();
 
             while(Window.getInstance().isVisible()) {
-                numBytesRead =  line.read(data, 0, data.length);
-                System.out.write(data, 0, numBytesRead);
+                numBytesRead = line.read(data, 0, data.length);
+                Visualizer.getInstance().setAudioSteam(data, numBytesRead);
             }
 
             line.stop();
