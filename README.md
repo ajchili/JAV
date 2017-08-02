@@ -16,6 +16,8 @@ Java Audio Visualizer
         3. Go to `Listen` tab
         4. Check `Listen to this device`
         5. Select your primary device in the dropdown
-        6. Close`CABLE Output Properties` window and set `CABLE Output` as the default device
+        6. Close`CABLE Output Properties` window
+        7. Set `CABLE Output` as the default device
 4. Audio should now be looped through `CABLE Output` to your primary device
-5. Launch JVA
+
+#### 3. Launch JVA
