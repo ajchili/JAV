@@ -24,3 +24,5 @@ hs_err_pid*
 \.idea/*
 
 JAV\.iml
+
+META-INF/MANIFEST\.MF
