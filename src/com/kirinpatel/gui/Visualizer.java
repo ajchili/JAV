@@ -1,20 +1,20 @@
 package com.kirinpatel.gui;
 
+import com.kirinpatel.audio.AudioGrabber;
 import com.sun.istack.internal.Nullable;
 
 import javax.swing.*;
 import java.awt.*;
 import java.util.ArrayList;
-import java.util.Random;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public class Visualizer extends JPanel {
 
-    private static int numOfBars = 20;
+    private static int state = 0;
+    private static int numOfPoints = 20;
     private static final int BASE_HEIGHT = 5;
-    private static int heights[] = new int[numOfBars];
-    private static byte[] audioSteam;
-    private static int length;
+    private static int heights[] = new int[numOfPoints];
+    private static byte[] bytes;
     private static Visualizer INSTANCE;
     private static AtomicBoolean isInstanceSet = new AtomicBoolean(false);
 
@@ -36,20 +36,15 @@ public class Visualizer extends JPanel {
 
     private Visualizer() {
         addMouseWheelListener(e -> {
-            if (e.getPreciseWheelRotation() == 1.0 && numOfBars > 20) {
-                numOfBars--;
-                heights = new int[numOfBars];
-            } else if (e.getPreciseWheelRotation() == -1.0) {
-                numOfBars++;
-                heights = new int[numOfBars];
-            }
+            state += (int) e.getPreciseWheelRotation();
+            if (state < 0) state = 0;
+            else if (state > 1) state = 1;
             repaint();
         });
     }
 
-    public void setAudioSteam(byte[] stream, int length) {
-        Visualizer.audioSteam = stream;
-        Visualizer.length = length;
+    public void setAudioSteam(byte[] stream) {
+        bytes = stream;
     }
 
     @Override
@@ -60,45 +55,75 @@ public class Visualizer extends JPanel {
         g.fillRect(0, 0, getWidth(), getHeight());
 
         // Draw visualizer
-        for (int i = 0; i < numOfBars; i++) {
-            g.setColor(new Color(45, 255 - ((255 / numOfBars) * i), (255 / numOfBars) * i));
-            drawBar(g, i, 2);
+        for (int i = 0; i < numOfPoints; i++) {
+            switch (state) {
+                case 0:
+                    drawBar(g, i, 0);
+                    break;
+                case 1:
+                    drawLine(g, i);
+                    break;
+            }
         }
     }
 
     private void drawBar(Graphics g, int index, int spacing) {
-        int remainder = (getWidth() % numOfBars);
-        int width = (getWidth() - remainder) / numOfBars;
+        int colorIndex = (index * 255) / numOfPoints;
+        g.setColor(new Color(255 - colorIndex / 2, 255 - colorIndex, colorIndex));
+
+        int remainder = (getWidth() % numOfPoints);
+        int width = (getWidth() - remainder) / numOfPoints;
         if (heights[index] > BASE_HEIGHT) {
             heights[index]--;
-        } else if (heights[index] < 1024){
+        } else if (heights[index] < AudioGrabber.SIZE){
             heights[index] = BASE_HEIGHT;
         }
-        g.fillRect(width * index + spacing * index - remainder / 2, getHeight() - heights[index], width, heights[index]);
+
+        g.fillRect(width * index + remainder / 2, getHeight() / 2 + heights[index] / 2, width, -heights[index]);
+    }
+
+    private void drawLine(Graphics g, int index) {
+        int colorIndex = (index * 255) / numOfPoints;
+        g.setColor(new Color(45, 255 - colorIndex, colorIndex));
+        int remainder = (getWidth() % numOfPoints);
+        int width = (getWidth() - remainder) / numOfPoints;
+        if (heights[index] > BASE_HEIGHT) {
+            heights[index]--;
+        } else if (heights[index] < AudioGrabber.SIZE){
+            heights[index] = BASE_HEIGHT;
+        }
+
+        if (index < heights.length - 1) {
+            g.drawLine(width * index + remainder / 2, getHeight() / 2 + heights[index], width * index + remainder / 2 + width, getHeight() / 2 - heights[index + 1]);
+        } else {
+            g.drawLine(width * index + remainder / 2, getHeight() / 2 + heights[index], width * index + remainder / 2 + width, getHeight() / 2 - heights[index]);
+        }
     }
 
     void calculateBarHeight() {
-        for (int i = 0; i < numOfBars; i++) {
-            float scale = 2.5f;
+        int range = AudioGrabber.SIZE / numOfPoints;
+        for (int i = 0; i < numOfPoints; i++) {
+            float scale = 3.75f;
             int previousHeight = heights[i];
-            int height = BASE_HEIGHT;
+            int height = 0;
+
+            if (bytes == null) {
+                return;
+            }
 
             ArrayList<Integer> values = new ArrayList<>();
-            for (int j = numOfBars * i; j < numOfBars * i + numOfBars; j++) {
-                if (j < 1024 && Visualizer.length == 1024) {
-                    values.add((int) Visualizer.audioSteam[j]);
-                } else {
-                    break;
-                }
+            for (int j = range * i; j < range * i + range; j++) {
+                values.add((int) bytes[j]);
             }
 
             if (values.size() > 0) {
                 int a = 0;
                 for (int b : values) {
-                    a += b;
+                    if (Math.abs(b) < 127 / 2) {
+                        a += b;
+                    }
                 }
-                a /= values.size();
-                height += Math.abs(a * scale);
+                height += (a / values.size()) * scale;
             }
 
             if (height > previousHeight) {

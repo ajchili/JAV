@@ -9,6 +9,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 public class AudioGrabber {
 
+    public final static int SIZE = 512;
     private static Mixer.Info mixer;
     private final static AudioFormat FORMAT = new AudioFormat(
             41000,
@@ -17,7 +18,6 @@ public class AudioGrabber {
             true,
             false);
     private static TargetDataLine line;
-    private static AudioInputStream stream;
     private static AudioGrabber INSTANCE;
     private static AtomicBoolean isInstanceSet = new AtomicBoolean(false);
 
@@ -60,13 +60,23 @@ public class AudioGrabber {
 
         new Thread(() -> {
             line.start();
-            byte[] data = new byte[1024];
+            byte[] data = new byte[SIZE];
 
             while(Window.getInstance().isVisible()) {
-                Visualizer.getInstance().setAudioSteam(data, line.read(data, 0, data.length));
+                try {
+                    Thread.sleep(1000 / 10);
+                    line.read(data, 0, data.length);
+                    Visualizer.getInstance().setAudioSteam(data);
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                }
             }
 
             line.stop();
         }).start();
+    }
+
+    public static AudioFormat getFormat() {
+        return FORMAT;
     }
 }
