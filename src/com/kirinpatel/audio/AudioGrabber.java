@@ -16,8 +16,8 @@ public class AudioGrabber {
             2,
             true,
             false);
-    private static DataLine.Info info = new DataLine.Info(TargetDataLine.class, FORMAT);
     private static TargetDataLine line;
+    private static AudioInputStream stream;
     private static AudioGrabber INSTANCE;
     private static AtomicBoolean isInstanceSet = new AtomicBoolean(false);
 
@@ -54,18 +54,16 @@ public class AudioGrabber {
             line = AudioSystem.getTargetDataLine(FORMAT);
             line.open();
         } catch (LineUnavailableException e) {
+            Window.getInstance().dispose();
             throw new IllegalStateException("Unable to read from CABLE Output!");
         }
 
         new Thread(() -> {
-            int numBytesRead;
-            byte[] data = new byte[line.getBufferSize() / 5];
-
             line.start();
+            byte[] data = new byte[1024];
 
             while(Window.getInstance().isVisible()) {
-                numBytesRead = line.read(data, 0, data.length);
-                Visualizer.getInstance().setAudioSteam(data, numBytesRead);
+                Visualizer.getInstance().setAudioSteam(data, line.read(data, 0, data.length));
             }
 
             line.stop();

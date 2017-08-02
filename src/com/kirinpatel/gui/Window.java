@@ -40,10 +40,10 @@ public class Window extends JFrame {
         setVisible(true);
 
         new Thread(() -> {
-            while (Window.getInstance().isVisible()) {
+            while (isVisible()) {
                 try {
                     Thread.sleep(1000 / 60);
-                    Visualizer.getInstance().repaint();
+                    Visualizer.getInstance().calculateBarHeight();
                 } catch (InterruptedException e) {
                     Thread.currentThread().interrupt();
                 }
