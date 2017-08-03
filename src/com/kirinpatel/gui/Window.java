@@ -1,5 +1,6 @@
 package com.kirinpatel.gui;
 
+import com.kirinpatel.audio.AudioGrabber;
 import com.sun.istack.internal.Nullable;
 
 import javax.swing.*;
@@ -35,7 +36,8 @@ public class Window extends JFrame {
         setDefaultCloseOperation(EXIT_ON_CLOSE);
         setLocationRelativeTo(null);
 
-        add(Visualizer.setInstance());
+        add(new Visualizer());
+        new AudioGrabber();
 
         setVisible(true);
 
@@ -43,7 +45,6 @@ public class Window extends JFrame {
             while (isVisible()) {
                 try {
                     Thread.sleep(1000 / 60);
-                    Visualizer.getInstance().calculateBarHeight();
                 } catch (InterruptedException e) {
                     Thread.currentThread().interrupt();
                 }
